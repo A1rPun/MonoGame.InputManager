@@ -107,8 +107,8 @@ namespace Game
         // Simple struct holding gamepad states
         private struct Input
         {
-            private GamePadState currentState { get; set; }
-            private GamePadState previousState { get; set; }
+            public GamePadState currentState { get; set; }
+            public GamePadState previousState { get; set; }
         }
         private List<Input> gamepadStates;
 
@@ -138,12 +138,11 @@ namespace Game
         {
             previousKeyboardState = currentKeyboardState;
             currentKeyboardState = Keyboard.GetState();
-            var i = 0;
-            foreach(var gamepadState in gamepadStates)
+            for (var i = 0; i < gamepadStates.Count; i++)
             {
+                var gamepadState = gamepadStates[i];
                 gamepadState.previousState = gamepadState.currentState;
                 gamepadState.currentState = GamePad.GetState(i);
-                i++;
             }
         }
     
@@ -204,7 +203,7 @@ namespace Game
                     returnState = state.Buttons.RightStick;
                     break;
                 default:
-                    throw new ArgumentOutOfRangeException(nameof(button), button, null);
+                    throw new ArgumentOutOfRangeException("Button", button, null);
             }
             return returnState;
         }

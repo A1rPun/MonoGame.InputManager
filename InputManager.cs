@@ -114,6 +114,21 @@ namespace IM
 
     class InputManager : GameComponent
     {
+        // Types of playerinput
+        private class Player { }
+        private class KeyboardPlayer : Player
+        {
+            public List<InputToKey> Map { get; set; }
+            public KeyboardState CurrentState { get; set; }
+            public KeyboardState PreviousState { get; set; }
+        }
+        private class GamePadPlayer : Player
+        {
+            public int index { get; set; }
+            public GamePadState CurrentState { get; set; }
+            public GamePadState PreviousState { get; set; }
+        }
+        private List<Player> players;
         // How many states need to be checked?
         private int MaxGamePads = 4;
         // Default - Return normalized float for isDown functions
@@ -123,23 +138,6 @@ namespace IM
         private float DeadzoneSticks = 0.25f;
         private float DeadzoneTriggers = 0.25f;
 
-        private class Player
-        {
-        }
-        private class KeyboardPlayer : Player
-        {
-            public List<InputToKey> map { get; set; }
-            public KeyboardState currentState { get; set; }
-            public KeyboardState previousState { get; set; }
-        }
-        private class GamePadPlayer : Player
-        {
-            public int index { get; set; }
-            public GamePadState currentState { get; set; }
-            public GamePadState previousState { get; set; }
-        }
-        private List<Player> players;
-
         // Constructor
         public InputManager(Game game, List<InputToKey> map = null)
             : base(game)
@@ -147,7 +145,7 @@ namespace IM
             players = new List<Player>();
             if (map != null)
             {
-                players.Add(new KeyboardPlayer() { map = map });
+                players.Add(new KeyboardPlayer() { Map = map });
             }
         }
 
@@ -163,17 +161,17 @@ namespace IM
                 if (player is KeyboardPlayer)
                 {
                     var kbp = player as KeyboardPlayer;
-                    kbp.previousState = kbp.previousState;
-                    kbp.currentState = Keyboard.GetState();
+                    kbp.PreviousState = kbp.PreviousState;
+                    kbp.CurrentState = Keyboard.GetState();
                     players[i] = kbp;
                 }
                 else
                 {
                     var gpp = player as GamePadPlayer;
-                    gpp.previousState = gpp.currentState;
-                    gpp.currentState = GamePad.GetState(gpp.index, gamePadDeadZone);
+                    gpp.PreviousState = gpp.CurrentState;
+                    gpp.CurrentState = GamePad.GetState(gpp.index, gamePadDeadZone);
 
-                    if (gpp.currentState.IsConnected)
+                    if (gpp.CurrentState.IsConnected)
                     {
                         indices.Add(gpp.index);
                         players[i] = gpp;
@@ -195,7 +193,7 @@ namespace IM
                     players.Add(new GamePadPlayer()
                     {
                         index = j,
-                        currentState = state
+                        CurrentState = state
                     });
                 }
             }
@@ -208,23 +206,18 @@ namespace IM
         {
             var player = players[(int)index];//out of bounds?
             return player is KeyboardPlayer
-                ? IsPressed(player as KeyboardPlayer, input)
-                : IsPressed(player as GamePadPlayer, input);
+                ? (player as KeyboardPlayer)
+                    .CurrentState
+                    .IsKeyDown(
+                        (player as KeyboardPlayer)
+                        .Map.Find(ak => ak.Input == input)
+                        .Keys[0]
+                    )
+                : IsPressed((player as GamePadPlayer).CurrentState, input);
         }
-        private bool IsPressed(KeyboardPlayer player, Input input)
+        private bool IsPressed(GamePadState state, Input input)
         {
             var pressed = false;
-            var key = player.map.Find(ak => ak.Input == input);
-            if (player.currentState.IsKeyDown(key.Keys[0]))
-            {
-                pressed = true;
-            }
-            return pressed;
-        }
-        private bool IsPressed(GamePadPlayer player, Input input)
-        {
-            var pressed = false;
-            var state = player.currentState;
             switch (input)
             {
                 case Input.Home:
@@ -308,6 +301,13 @@ namespace IM
             return pressed;
         }
         /*
+        public bool IsHeld(PlayerIndex index, Input input)
+        {
+            var player = players[(int)index];//out of bounds?
+            return player is KeyboardPlayer
+                ? IsPressed((player as KeyboardPlayer).currentState, input)
+                : IsPressed((player as GamePadPlayer), input);
+        }
         public bool IsHeld(int index, Input input)
         {
             var held = false;

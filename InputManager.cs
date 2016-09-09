@@ -1,29 +1,4 @@
 ﻿/*
- ___                   _   __  __                                   
-|_ _|_ __  _ __  _   _| |_|  \/  | __ _ _ __   __ _  __ _  ___ _ __ 
- | || '_ \| '_ \| | | | __| |\/| |/ _` | '_ \ / _` |/ _` |/ _ \ '__|
- | || | | | |_) | |_| | |_| |  | | (_| | | | | (_| | (_| |  __/ |   
-|___|_| |_| .__/ \__,_|\__|_|  |_|\__,_|_| |_|\__,_|\__, |\___|_|   
-          |_|                                       |___/           
-          
-          _=====_                               _=====_
-         / _____ \                             / _____ \
-       +.-'_____'-.---------------------------.-'_____'-.+
-      /   |     |  '.                       .'  |  _  |   \
-     / ___| /|\ |___ \                     / ___| (_) |___ \
-    / |      |      | ;  __           __  ; | _         _ | ;
-    | | <---   ---> | | |__|         |__> | |(_)       (_)| |
-    | |___   |   ___| ; BACK        START ; |___   _   ___| ;
-    |\    | \|/ |    /  _              _   \    | (_) |    /|
-    | \   |_____|  .','" "',        ,'" "', '.  |_____|  .' |
-    |  '-.______.-' /       \      /       \  '-._____.-'   |
-    |               |       |------|       |                |
-    |              /\       /      \       /\               |
-    |             /  '.___.'        '.___.'  \              |
-    |            /                            \             |
-     \          /                              \           /
-      \________/                                \_________/ 
-
  *** TODO ***
  * GamePadCapabilities capabilities = GamePad.GetCapabilities(PlayerIndex.One);
  * // If there a controller attached, handle it
@@ -55,8 +30,7 @@ using System.Collections.Generic;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Input;
 
-// Namespace needed?
-namespace IM
+namespace A1r.Input
 {
     // Input enum used to identify which action has been pressed
     enum Input
@@ -114,7 +88,7 @@ namespace IM
 
     class InputManager : GameComponent
     {
-        // Types of playerinput
+        // Types of player input
         private class Player { }
         private class KeyboardPlayer : Player
         {
@@ -129,16 +103,15 @@ namespace IM
             public GamePadState PreviousState { get; set; }
         }
         private List<Player> players;
-        // How many states need to be checked?
-        private int MaxGamePads = 4;
         // Default - Return normalized float for isDown functions
-        private bool KeyboardDisadvantage = true;
+        // TODO: Implement `private bool KeyboardDisadvantage = true;`
         // Deadzones
         private GamePadDeadZone gamePadDeadZone = GamePadDeadZone.IndependentAxes;
-        private float DeadzoneSticks = 0.25f;
-        private float DeadzoneTriggers = 0.25f;
+        public float DeadzoneSticks = 0.25f;
+        public float DeadzoneTriggers = 0.25f;
+        // How many states need to be checked?
+        public int MaxGamePads = 4;
 
-        // Constructor
         public InputManager(Game game, List<InputToKey> map = null)
             : base(game)
         {
@@ -149,19 +122,18 @@ namespace IM
             }
         }
 
-        // Override of GameComponent.Update
         public override void Update(GameTime gameTime)
         {
             var indices = new List<int>();
-
             for (int i = players.Count; --i == 0; )
             {
                 var player = players[i];
 
                 if (player is KeyboardPlayer)
                 {
+                    // Update the states of KeyboardPlayer
                     var kbp = player as KeyboardPlayer;
-                    kbp.PreviousState = kbp.PreviousState;
+                    kbp.PreviousState = kbp.CurrentState;
                     kbp.CurrentState = Keyboard.GetState();
                     players[i] = kbp;
                 }
@@ -197,152 +169,210 @@ namespace IM
                     });
                 }
             }
-
             base.Update(gameTime);
         }
 
-        // IsPressed
-        public bool IsPressed(PlayerIndex index, Input input)
+        private Keys[] getKeys(List<InputToKey> map, Input input)
         {
-            var player = players[(int)index];//out of bounds?
-            return player is KeyboardPlayer
-                ? (player as KeyboardPlayer)
-                    .CurrentState
-                    .IsKeyDown(
-                        (player as KeyboardPlayer)
-                        .Map.Find(ak => ak.Input == input)
-                        .Keys[0]
-                    )
-                : IsPressed((player as GamePadPlayer).CurrentState, input);
+            return map.Find(m => m.Input == input).Keys;
         }
-        private bool IsPressed(GamePadState state, Input input)
+
+        public bool IsDown(Keys key)
         {
-            var pressed = false;
+            var player = players[0] as KeyboardPlayer;
+            return player.CurrentState.IsKeyDown(key);
+        }
+
+        public bool IsDown(Input input, PlayerIndex index = 0)
+        {
+            var p = players[(int)index];//out of bounds?
+            if (p is KeyboardPlayer)
+            {
+                var player = (KeyboardPlayer)p;
+                var keys = getKeys(player.Map, input);
+                for (int j = 0; j < keys.Length; j++)
+                {
+                    if (player.CurrentState.IsKeyDown(keys[j]))
+                    {
+                        return true;
+                    }
+                }
+                return false;
+            }
+            else
+            {
+                return IsDown(((GamePadPlayer)p).CurrentState, input);
+            }
+        }
+
+        private bool IsDown(GamePadState state, Input input)
+        {
             switch (input)
             {
                 case Input.Home:
-                    pressed = state.Buttons.BigButton == ButtonState.Pressed;
-                    break;
+                    return state.Buttons.BigButton == ButtonState.Pressed;
                 case Input.Start:
-                    pressed = state.Buttons.Start == ButtonState.Pressed;
-                    break;
+                    return state.Buttons.Start == ButtonState.Pressed;
                 case Input.Back:
-                    pressed = state.Buttons.Back == ButtonState.Pressed;
-                    break;
+                    return state.Buttons.Back == ButtonState.Pressed;
                 case Input.Up:
-                    pressed = state.DPad.Up == ButtonState.Pressed;
-                    break;
+                    return state.DPad.Up == ButtonState.Pressed;
                 case Input.Left:
-                    pressed = state.DPad.Left == ButtonState.Pressed;
-                    break;
+                    return state.DPad.Left == ButtonState.Pressed;
                 case Input.Down:
-                    pressed = state.DPad.Down == ButtonState.Pressed;
-                    break;
+                    return state.DPad.Down == ButtonState.Pressed;
                 case Input.Right:
-                    pressed = state.DPad.Right == ButtonState.Pressed;
-                    break;
+                    return state.DPad.Right == ButtonState.Pressed;
                 case Input.FaceButtonUp:
-                    pressed = state.Buttons.Y == ButtonState.Pressed;
-                    break;
+                    return state.Buttons.Y == ButtonState.Pressed;
                 case Input.FaceButtonLeft:
-                    pressed = state.Buttons.X == ButtonState.Pressed;
-                    break;
+                    return state.Buttons.X == ButtonState.Pressed;
                 case Input.FaceButtonDown:
-                    pressed = state.Buttons.A == ButtonState.Pressed;
-                    break;
+                    return state.Buttons.A == ButtonState.Pressed;
                 case Input.FaceButtonRight:
-                    pressed = state.Buttons.B == ButtonState.Pressed;
-                    break;
+                    return state.Buttons.B == ButtonState.Pressed;
                 case Input.LeftShoulder:
-                    pressed = state.Buttons.LeftShoulder == ButtonState.Pressed;
-                    break;
+                    return state.Buttons.LeftShoulder == ButtonState.Pressed;
                 case Input.RightShoulder:
-                    pressed = state.Buttons.RightShoulder == ButtonState.Pressed;
-                    break;
+                    return state.Buttons.RightShoulder == ButtonState.Pressed;
                 case Input.LeftTrigger:
-                    pressed = state.Triggers.Left > DeadzoneTriggers;
-                    break;
+                    return state.Triggers.Left > DeadzoneTriggers;
                 case Input.RightTrigger:
-                    pressed = state.Triggers.Right > DeadzoneTriggers;
-                    break;
+                    return state.Triggers.Right > DeadzoneTriggers;
                 case Input.LeftStick:
-                    pressed = state.Buttons.LeftStick == ButtonState.Pressed;
-                    break;
+                    return state.Buttons.LeftStick == ButtonState.Pressed;
                 case Input.LeftStickUp:
-                    pressed = state.ThumbSticks.Left.Y > DeadzoneSticks;
-                    break;
+                    return state.ThumbSticks.Left.Y > DeadzoneSticks;
                 case Input.LeftStickLeft:
-                    pressed = state.ThumbSticks.Left.X < DeadzoneSticks;
-                    break;
+                    return state.ThumbSticks.Left.X < DeadzoneSticks;
                 case Input.LeftStickDown:
-                    pressed = state.ThumbSticks.Left.Y < DeadzoneSticks;
-                    break;
+                    return state.ThumbSticks.Left.Y < DeadzoneSticks;
                 case Input.LeftStickRight:
-                    pressed = state.ThumbSticks.Left.X > DeadzoneSticks;
-                    break;
+                    return state.ThumbSticks.Left.X > DeadzoneSticks;
                 case Input.RightStick:
-                    pressed = state.Buttons.RightStick == ButtonState.Pressed;
-                    break;
+                    return state.Buttons.RightStick == ButtonState.Pressed;
                 case Input.RightStickUp:
-                    pressed = state.ThumbSticks.Right.Y > DeadzoneSticks;
-                    break;
+                    return state.ThumbSticks.Right.Y > DeadzoneSticks;
                 case Input.RightStickLeft:
-                    pressed = state.ThumbSticks.Right.X < DeadzoneSticks;
-                    break;
+                    return state.ThumbSticks.Right.X < DeadzoneSticks;
                 case Input.RightStickDown:
-                    pressed = state.ThumbSticks.Right.Y < DeadzoneSticks;
-                    break;
+                    return state.ThumbSticks.Right.Y < DeadzoneSticks;
                 case Input.RightStickRight:
-                    pressed = state.ThumbSticks.Right.X > DeadzoneSticks;
-                    break;
-                default:
-                    break;
+                    return state.ThumbSticks.Right.X > DeadzoneSticks;
             }
-            return pressed;
-        }
-        /*
-        public bool IsHeld(PlayerIndex index, Input input)
-        {
-            var player = players[(int)index];//out of bounds?
-            return player is KeyboardPlayer
-                ? IsPressed((player as KeyboardPlayer).currentState, input)
-                : IsPressed((player as GamePadPlayer), input);
-        }
-        public bool IsHeld(int index, Input input)
-        {
-            var held = false;
-            var state = players[index];
-            if (state.currentState.IsConnected && state.previousState.IsConnected)
-                held = IsPressed(state.currentState, input) && IsPressed(state.previousState, input);
-            return held;
+            return false;
         }
 
-        public bool IsDown(int index, Input input)
+        public bool IsHeld(Keys key)
         {
-            var pressed = false;
-            var state = players[index];
-            if (state.currentState.IsConnected && state.previousState.IsConnected)
-                pressed = IsPressed(state.currentState, input) && !IsPressed(state.previousState, input);
-            return pressed;
+            var player = players[0] as KeyboardPlayer;
+            return player.CurrentState.IsKeyDown(key) && player.PreviousState.IsKeyDown(key);
         }
 
-        public bool IsUp(int index, Input input)
+        public bool IsHeld(Input input, PlayerIndex index = 0)
         {
-            var up = false;
-            var state = players[index];
-            if (state.currentState.IsConnected && state.previousState.IsConnected)
-                up = !IsPressed(state.currentState, input) && IsPressed(state.previousState, input);
-            return up;
+            var p = players[(int)index];//out of bounds?
+            if (p is KeyboardPlayer)
+            {
+                var player = (KeyboardPlayer)p;
+                var keys = getKeys(player.Map, input);
+                for (int j = 0; j < keys.Length; j++)
+                {
+                    var key = keys[j];
+                    if (player.CurrentState.IsKeyDown(key) && player.PreviousState.IsKeyDown(key))
+                    {
+                        return true;
+                    }
+                }
+                return false;
+            }
+            else
+            {
+                var player = (GamePadPlayer)p;
+                return IsDown(player.CurrentState, input) && IsDown(player.PreviousState, input);
+            }
         }
-        */
+
+        public bool JustPressed(Keys key)
+        {
+            var player = players[0] as KeyboardPlayer;
+            return player.CurrentState.IsKeyDown(key) && !player.PreviousState.IsKeyDown(key);
+        }
+
+        public bool JustPressed(Input input, PlayerIndex index = 0)
+        {
+            var p = players[(int)index];//out of bounds?
+            if (p is KeyboardPlayer)
+            {
+                var player = (KeyboardPlayer)p;
+                var keys = getKeys(player.Map, input);
+                for (int j = 0; j < keys.Length; j++)
+                {
+                    var key = keys[j];
+                    if (player.CurrentState.IsKeyDown(key) && !player.PreviousState.IsKeyDown(key))
+                    {
+                        return true;
+                    }
+                }
+                return false;
+            }
+            else
+            {
+                var player = (GamePadPlayer)p;
+                return IsDown(player.CurrentState, input) && !IsDown(player.PreviousState, input);
+            }
+        }
+
+        public bool JustReleased(Keys key)
+        {
+            var player = players[0] as KeyboardPlayer;
+            return !player.CurrentState.IsKeyDown(key) && player.PreviousState.IsKeyDown(key);
+        }
+
+        public bool JustReleased(Input input, PlayerIndex index = 0)
+        {
+            var p = players[(int)index];//out of bounds?
+            if (p is KeyboardPlayer)
+            {
+                var player = (KeyboardPlayer)p;
+                var keys = getKeys(player.Map, input);
+                for (int j = 0; j < keys.Length; j++)
+                {
+                    var key = keys[j];
+                    if (!player.CurrentState.IsKeyDown(key) && player.PreviousState.IsKeyDown(key))
+                    {
+                        return true;
+                    }
+                }
+                return false;
+            }
+            else
+            {
+                var player = (GamePadPlayer)p;
+                return !IsDown(player.CurrentState, input) && IsDown(player.PreviousState, input);
+            }
+        }
+
+        public bool SomethingDown(PlayerIndex index = 0)
+        {
+            return false;
+            /*
+            var player = players[0] as KeyboardPlayer;
+            return player.CurrentState.IsKeyDown(key);
+             
+            Array a = Enum.GetValues(typeof(Keys));
+            Array b = Enum.GetValues(typeof(Input));
+
+            foreach (Keys key in a)
+            {
+                if(){}
+            }
+             */
+        }
+
         public int GetPlayerCount()
         {
             return players.Count;
-        }
-
-        public void SetMaxGamePads(int count)
-        {
-            MaxGamePads = count;
         }
     }
 }

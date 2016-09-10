@@ -72,17 +72,11 @@ namespace A1r.Input
     struct InputToKey
     {
         public Input Input;
-        public Keys[] Keys;
-
+        public Keys Key;
         public InputToKey(Input input, Keys key)
         {
             this.Input = input;
-            this.Keys = new Keys[] { key };
-        }
-        public InputToKey(Input input, Keys[] keys)
-        {
-            this.Input = input;
-            this.Keys = keys;
+            this.Key = key;
         }
     }
 
@@ -103,43 +97,43 @@ namespace A1r.Input
             public GamePadState PreviousState { get; set; }
         }
         private List<Player> players;
+        private KeyboardPlayer keyboardPlayer;
         // Default - Return normalized float for isDown functions
         // TODO: Implement `private bool KeyboardDisadvantage = true;`
         // Deadzones
         private GamePadDeadZone gamePadDeadZone = GamePadDeadZone.IndependentAxes;
+        private Array inputValues;
         public float DeadzoneSticks = 0.25f;
         public float DeadzoneTriggers = 0.25f;
         // How many states need to be checked?
-        public int MaxGamePads = 4;
+        public int MaxGamePads = 2;
+        public int AmountOfPlayers = 1;
 
         public InputManager(Game game, List<InputToKey> map = null)
             : base(game)
         {
+            inputValues = Enum.GetValues(typeof(Input));
             players = new List<Player>();
+            keyboardPlayer = new KeyboardPlayer();
             if (map != null)
             {
-                players.Add(new KeyboardPlayer() { Map = map });
+                keyboardPlayer.Map = map;
+                players.Add(keyboardPlayer);
             }
         }
 
         public override void Update(GameTime gameTime)
         {
             var indices = new List<int>();
+            keyboardPlayer.PreviousState = keyboardPlayer.CurrentState;
+            keyboardPlayer.CurrentState = Keyboard.GetState();
+
             for (int i = players.Count; --i == 0; )
             {
                 var player = players[i];
-
-                if (player is KeyboardPlayer)
+                if (player is GamePadPlayer)
                 {
-                    // Update the states of KeyboardPlayer
-                    var kbp = player as KeyboardPlayer;
-                    kbp.PreviousState = kbp.CurrentState;
-                    kbp.CurrentState = Keyboard.GetState();
-                    players[i] = kbp;
-                }
-                else
-                {
-                    var gpp = player as GamePadPlayer;
+                    var gpp = (GamePadPlayer)player;
                     gpp.PreviousState = gpp.CurrentState;
                     gpp.CurrentState = GamePad.GetState(gpp.index, gamePadDeadZone);
 
@@ -172,15 +166,14 @@ namespace A1r.Input
             base.Update(gameTime);
         }
 
-        private Keys[] getKeys(List<InputToKey> map, Input input)
+        private Keys getKey(List<InputToKey> map, Input input)
         {
-            return map.Find(m => m.Input == input).Keys;
+            return map.Find(m => m.Input == input).Key;
         }
 
         public bool IsDown(Keys key)
         {
-            var player = players[0] as KeyboardPlayer;
-            return player.CurrentState.IsKeyDown(key);
+            return keyboardPlayer.CurrentState.IsKeyDown(key);
         }
 
         public bool IsDown(Input input, PlayerIndex index = 0)
@@ -189,15 +182,8 @@ namespace A1r.Input
             if (p is KeyboardPlayer)
             {
                 var player = (KeyboardPlayer)p;
-                var keys = getKeys(player.Map, input);
-                for (int j = 0; j < keys.Length; j++)
-                {
-                    if (player.CurrentState.IsKeyDown(keys[j]))
-                    {
-                        return true;
-                    }
-                }
-                return false;
+                var key = getKey(player.Map, input);
+                return player.CurrentState.IsKeyDown(key);
             }
             else
             {
@@ -265,8 +251,7 @@ namespace A1r.Input
 
         public bool IsHeld(Keys key)
         {
-            var player = players[0] as KeyboardPlayer;
-            return player.CurrentState.IsKeyDown(key) && player.PreviousState.IsKeyDown(key);
+            return keyboardPlayer.CurrentState.IsKeyDown(key) && keyboardPlayer.PreviousState.IsKeyDown(key);
         }
 
         public bool IsHeld(Input input, PlayerIndex index = 0)
@@ -275,16 +260,8 @@ namespace A1r.Input
             if (p is KeyboardPlayer)
             {
                 var player = (KeyboardPlayer)p;
-                var keys = getKeys(player.Map, input);
-                for (int j = 0; j < keys.Length; j++)
-                {
-                    var key = keys[j];
-                    if (player.CurrentState.IsKeyDown(key) && player.PreviousState.IsKeyDown(key))
-                    {
-                        return true;
-                    }
-                }
-                return false;
+                var key = getKey(player.Map, input);
+                return player.CurrentState.IsKeyDown(key) && player.PreviousState.IsKeyDown(key);
             }
             else
             {
@@ -295,8 +272,7 @@ namespace A1r.Input
 
         public bool JustPressed(Keys key)
         {
-            var player = players[0] as KeyboardPlayer;
-            return player.CurrentState.IsKeyDown(key) && !player.PreviousState.IsKeyDown(key);
+            return keyboardPlayer.CurrentState.IsKeyDown(key) && !keyboardPlayer.PreviousState.IsKeyDown(key);
         }
 
         public bool JustPressed(Input input, PlayerIndex index = 0)
@@ -305,16 +281,8 @@ namespace A1r.Input
             if (p is KeyboardPlayer)
             {
                 var player = (KeyboardPlayer)p;
-                var keys = getKeys(player.Map, input);
-                for (int j = 0; j < keys.Length; j++)
-                {
-                    var key = keys[j];
-                    if (player.CurrentState.IsKeyDown(key) && !player.PreviousState.IsKeyDown(key))
-                    {
-                        return true;
-                    }
-                }
-                return false;
+                var key = getKey(player.Map, input);
+                return player.CurrentState.IsKeyDown(key) && !player.PreviousState.IsKeyDown(key);
             }
             else
             {
@@ -325,8 +293,7 @@ namespace A1r.Input
 
         public bool JustReleased(Keys key)
         {
-            var player = players[0] as KeyboardPlayer;
-            return !player.CurrentState.IsKeyDown(key) && player.PreviousState.IsKeyDown(key);
+            return !keyboardPlayer.CurrentState.IsKeyDown(key) && keyboardPlayer.PreviousState.IsKeyDown(key);
         }
 
         public bool JustReleased(Input input, PlayerIndex index = 0)
@@ -335,16 +302,8 @@ namespace A1r.Input
             if (p is KeyboardPlayer)
             {
                 var player = (KeyboardPlayer)p;
-                var keys = getKeys(player.Map, input);
-                for (int j = 0; j < keys.Length; j++)
-                {
-                    var key = keys[j];
-                    if (!player.CurrentState.IsKeyDown(key) && player.PreviousState.IsKeyDown(key))
-                    {
-                        return true;
-                    }
-                }
-                return false;
+                var key = getKey(player.Map, input);
+                return !player.CurrentState.IsKeyDown(key) && player.PreviousState.IsKeyDown(key);
             }
             else
             {
@@ -355,19 +314,23 @@ namespace A1r.Input
 
         public bool SomethingDown(PlayerIndex index = 0)
         {
-            return false;
-            /*
-            var player = players[0] as KeyboardPlayer;
-            return player.CurrentState.IsKeyDown(key);
-             
-            Array a = Enum.GetValues(typeof(Keys));
-            Array b = Enum.GetValues(typeof(Input));
-
-            foreach (Keys key in a)
+            var p = players[(int)index];//out of bounds?
+            if (p is KeyboardPlayer)
             {
-                if(){}
+                return keyboardPlayer.CurrentState.GetPressedKeys().Length > 0;
             }
-             */
+            else
+            {
+                var player = (GamePadPlayer)p;
+                foreach (Input key in inputValues)
+                {
+                    if (IsDown(player.CurrentState, key))
+                    {
+                        return true;
+                    }
+                }
+                return false;
+            }
         }
 
         public int GetPlayerCount()

@@ -95,7 +95,7 @@ An easy-to-use inputmanager for MonoGame
 
 Add a keyboard mapping to a "GamePad" to create compatibility for both keyboard and controller
 
-	iM = new InputManager(this, new List<InputToKey>
+	iM = new InputManager(this, InputToKey[]
 	{
 		new InputToKey(Input.Home, Keys.Space),
         new InputToKey(Input.Start, Keys.Enter),
@@ -251,7 +251,6 @@ Input enum used to identify which action has been pressed
 
 # TODO
 
-- XINPUT VS DIRECTINPUT ??
 - MousePlayer ?? mouse support
 - More devices?
 - Remove keyboardstates (&& mouse) if platform != Computer (just a simple boolean)

@@ -418,5 +418,29 @@ namespace A1r.Input
         {
             return players.Count;
         }
+
+        public bool SetVibration(int index, float left, float right)
+        {
+            if (index >= players.Count) return false;
+            var player = players[index];
+            if (player is GamePadPlayer)
+            {
+                var gpp = (GamePadPlayer)player;
+                return GamePad.SetVibration(gpp.index, left, right);
+            }
+            return false;
+        }
+
+        public GamePadCapabilities GetCapabilities(int index)
+        {
+            if (index >= players.Count) return new GamePadCapabilities();
+            var player = players[index];
+            if (player is GamePadPlayer)
+            {
+                var gpp = (GamePadPlayer)player;
+                return GamePad.GetCapabilities(gpp.index);
+            }
+            return new GamePadCapabilities();
+        }
     }
 }

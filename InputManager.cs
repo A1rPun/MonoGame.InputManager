@@ -1,28 +1,10 @@
 ﻿/*
  *** TODO ***
- * GamePadCapabilities capabilities = GamePad.GetCapabilities(PlayerIndex.One);
- * // If there a controller attached, handle it
- * if (capabilities.IsConnected) {
- *     // Get the current state of Controller1
- *     GamePadState state = GamePad.GetState(PlayerIndex.One);
- *     // You can check explicitly if a gamepad has support for a certain feature
- *     if (capabilities.HasLeftXThumbStick) {
- *         // Check teh direction in X axis of left analog stick
- *         if (state.ThumbSticks.Left.X < -0.5f) 
- * 
- * 1) keyboard input als vector altijd normalizen want een vector van (1,1) of (1,-1) etc. is impossible op gamepad
- * 2) gamepad input als vector alleen normalizen als je de "unfair" pressure advantage weg wil hebben
- *
- * een 2e enum, enum AnalogAction { LeftTrigger, RightTrigger, LeftStickX, LeftStickY, RightStickX, RightStickY }
- * en dan 2 implementaties van IsDown maken, die 2e accepteert dan zo'n AnalogAction en die gebruikt dan thresholds óf returnt een float ipv bool
- *
- * Bind an action to multiple buttons
- * Key ghost warnings
- * Keys configurable
- * MousePlayer ?? mouse support
- * thumbstick configurable, 360 degrees or 8 directions
- * More deadzone options http://www.third-helix.com/2013/04/12/doing-thumbstick-dead-zones-right.html
  * XINPUT VS DIRECTINPUT ??
+ * Remove keyboardstates if platform != Computer (just a simple boolean)
+ * MousePlayer ?? mouse support
+ * More devices?
+ * More deadzone options http://www.third-helix.com/2013/04/12/doing-thumbstick-dead-zones-right.html
 */
 
 using System;
@@ -96,18 +78,14 @@ namespace A1r.Input
             public GamePadState CurrentState { get; set; }
             public GamePadState PreviousState { get; set; }
         }
+
         private List<Player> players;
         private KeyboardPlayer keyboardPlayer;
-        // Default - Return normalized float for isDown functions
-        // TODO: Implement `private bool KeyboardDisadvantage = true;`
-        // Deadzones
         private GamePadDeadZone gamePadDeadZone = GamePadDeadZone.IndependentAxes;
         private Array inputValues;
         public float DeadzoneSticks = 0.25f;
         public float DeadzoneTriggers = 0.25f;
-        // How many states need to be checked?
-        public int MaxGamePads = 2;
-        public int AmountOfPlayers = 1;
+        public int MaxJoinablePlayers = 1;
 
         public InputManager(Game game, List<InputToKey> map = null)
             : base(game)
@@ -125,6 +103,7 @@ namespace A1r.Input
         public override void Update(GameTime gameTime)
         {
             var indices = new List<int>();
+            // Save the one and only (if available) keyboardstate 
             keyboardPlayer.PreviousState = keyboardPlayer.CurrentState;
             keyboardPlayer.CurrentState = Keyboard.GetState();
 
@@ -134,11 +113,13 @@ namespace A1r.Input
                 if (player is GamePadPlayer)
                 {
                     var gpp = (GamePadPlayer)player;
-                    gpp.PreviousState = gpp.CurrentState;
-                    gpp.CurrentState = GamePad.GetState(gpp.index, gamePadDeadZone);
+                    var state = GamePad.GetState(gpp.index, gamePadDeadZone);
 
-                    if (gpp.CurrentState.IsConnected)
+                    if (state.IsConnected)
                     {
+                        // Update gamepad state
+                        gpp.PreviousState = gpp.CurrentState;
+                        gpp.CurrentState = state;
                         indices.Add(gpp.index);
                         players[i] = gpp;
                     }
@@ -150,17 +131,20 @@ namespace A1r.Input
                 }
             }
             //Checking for new gamepads
-            for (int j = 0; j < MaxGamePads; j++)
+            if (players.Count < MaxJoinablePlayers)
             {
-                if (indices.Contains(j)) continue;
-                var state = GamePad.GetState(j, gamePadDeadZone);
-                if (state.IsConnected)
+                for (int j = 0, l = GamePad.MaximumGamePadCount; j < l; j++)
                 {
-                    players.Add(new GamePadPlayer()
+                    if (indices.Contains(j)) continue;
+                    var state = GamePad.GetState(j, gamePadDeadZone);
+                    if (state.IsConnected)
                     {
-                        index = j,
-                        CurrentState = state
-                    });
+                        players.Add(new GamePadPlayer()
+                        {
+                            index = j,
+                            CurrentState = state
+                        });
+                    }
                 }
             }
             base.Update(gameTime);
@@ -176,9 +160,10 @@ namespace A1r.Input
             return keyboardPlayer.CurrentState.IsKeyDown(key);
         }
 
-        public bool IsDown(Input input, PlayerIndex index = 0)
+        public bool IsDown(Input input, int index = 0)
         {
-            var p = players[(int)index];//out of bounds?
+            if (index >= players.Count) return false;
+            var p = players[(int)index];
             if (p is KeyboardPlayer)
             {
                 var player = (KeyboardPlayer)p;
@@ -254,9 +239,10 @@ namespace A1r.Input
             return keyboardPlayer.CurrentState.IsKeyDown(key) && keyboardPlayer.PreviousState.IsKeyDown(key);
         }
 
-        public bool IsHeld(Input input, PlayerIndex index = 0)
+        public bool IsHeld(Input input, int index = 0)
         {
-            var p = players[(int)index];//out of bounds?
+            if (index >= players.Count) return false;
+            var p = players[(int)index];
             if (p is KeyboardPlayer)
             {
                 var player = (KeyboardPlayer)p;
@@ -275,9 +261,10 @@ namespace A1r.Input
             return keyboardPlayer.CurrentState.IsKeyDown(key) && !keyboardPlayer.PreviousState.IsKeyDown(key);
         }
 
-        public bool JustPressed(Input input, PlayerIndex index = 0)
+        public bool JustPressed(Input input, int index = 0)
         {
-            var p = players[(int)index];//out of bounds?
+            if (index >= players.Count) return false;
+            var p = players[(int)index];
             if (p is KeyboardPlayer)
             {
                 var player = (KeyboardPlayer)p;
@@ -296,9 +283,10 @@ namespace A1r.Input
             return !keyboardPlayer.CurrentState.IsKeyDown(key) && keyboardPlayer.PreviousState.IsKeyDown(key);
         }
 
-        public bool JustReleased(Input input, PlayerIndex index = 0)
+        public bool JustReleased(Input input, int index = 0)
         {
-            var p = players[(int)index];//out of bounds?
+            if (index >= players.Count) return false;
+            var p = players[(int)index];
             if (p is KeyboardPlayer)
             {
                 var player = (KeyboardPlayer)p;
@@ -312,9 +300,10 @@ namespace A1r.Input
             }
         }
 
-        public bool SomethingDown(PlayerIndex index = 0)
+        public bool SomethingDown(int index = 0)
         {
-            var p = players[(int)index];//out of bounds?
+            if (index >= players.Count) return false;
+            var p = players[(int)index];
             if (p is KeyboardPlayer)
             {
                 return keyboardPlayer.CurrentState.GetPressedKeys().Length > 0;
@@ -331,6 +320,41 @@ namespace A1r.Input
                 }
                 return false;
             }
+        }
+
+        public float GetRaw(Input input, int index = 0)
+        {
+
+            if (index >= players.Count) return 0f;
+            var p = players[(int)index];
+            if (p is GamePadPlayer)
+            {
+                var state = ((GamePadPlayer)p).CurrentState;
+                switch (input)
+                {
+                    case Input.LeftTrigger:
+                        return state.Triggers.Left;
+                    case Input.RightTrigger:
+                        return state.Triggers.Right;
+                    case Input.LeftStickUp:
+                        return state.ThumbSticks.Left.Y;
+                    case Input.LeftStickLeft:
+                        return state.ThumbSticks.Left.X;
+                    case Input.LeftStickDown:
+                        return state.ThumbSticks.Left.Y;
+                    case Input.LeftStickRight:
+                        return state.ThumbSticks.Left.X;
+                    case Input.RightStickUp:
+                        return state.ThumbSticks.Right.Y;
+                    case Input.RightStickLeft:
+                        return state.ThumbSticks.Right.X;
+                    case Input.RightStickDown:
+                        return state.ThumbSticks.Right.Y;
+                    case Input.RightStickRight:
+                        return state.ThumbSticks.Right.X;
+                }
+            }
+            return 0f;
         }
 
         public int GetPlayerCount()

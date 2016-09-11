@@ -122,8 +122,6 @@ To implement multiple keyboard/controller players you can do something like this
     {
 		iM = new InputManager()
 		{
-			Multiplayer = true, // Update loop checks more gamepads
-			MaxGamePads = 6 // 4-player game so max 6 devices (Consider controller disconnect on PC on a party)
 		}
 	}
 	int NumberOfPlayers = iM.getPlayerCount();
@@ -139,7 +137,7 @@ To implement multiple keyboard/controller players you can do something like this
 		yourPlayerClass[] myArray;
 		foreach(var player in myArray)
 		{
-			// Use an int or the PlayerIndex Enum for an index (gets cast anyway)
+			// Use an index to retrieve the player action
 			if(iM.IsDown(Input.Home, player.index)){ /**/ }
 		}
 	}

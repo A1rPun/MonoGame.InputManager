@@ -113,7 +113,7 @@ So code like this will still work
 		pos.X += acceleration;
 	}
 
-## Multiplayer
+## Local Multiplayer
 
 To implement multiple keyboard/controller players you can do something like this:
 

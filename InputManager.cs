@@ -98,7 +98,7 @@ namespace A1r.Input
             keyboardPlayer.PreviousState = keyboardPlayer.CurrentState;
             keyboardPlayer.CurrentState = Keyboard.GetState();
 
-            for (int i = players.Count; --i == 0; )
+            for (int i = players.Count - 1; i >= 0; i--)
             {
                 var player = players[i];
                 if (player is GamePadPlayer)

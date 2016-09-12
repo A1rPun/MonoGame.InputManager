@@ -225,9 +225,9 @@ namespace A1r.Input
                 case Input.LeftStickUp:
                     return state.ThumbSticks.Left.Y > DeadzoneSticks;
                 case Input.LeftStickLeft:
-                    return state.ThumbSticks.Left.X < DeadzoneSticks;
+                    return state.ThumbSticks.Left.X < -DeadzoneSticks;
                 case Input.LeftStickDown:
-                    return state.ThumbSticks.Left.Y < DeadzoneSticks;
+                    return state.ThumbSticks.Left.Y < -DeadzoneSticks;
                 case Input.LeftStickRight:
                     return state.ThumbSticks.Left.X > DeadzoneSticks;
                 case Input.RightStick:
@@ -235,9 +235,9 @@ namespace A1r.Input
                 case Input.RightStickUp:
                     return state.ThumbSticks.Right.Y > DeadzoneSticks;
                 case Input.RightStickLeft:
-                    return state.ThumbSticks.Right.X < DeadzoneSticks;
+                    return state.ThumbSticks.Right.X < -DeadzoneSticks;
                 case Input.RightStickDown:
-                    return state.ThumbSticks.Right.Y < DeadzoneSticks;
+                    return state.ThumbSticks.Right.Y < -DeadzoneSticks;
                 case Input.RightStickRight:
                     return state.ThumbSticks.Right.X > DeadzoneSticks;
             }

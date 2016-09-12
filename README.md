@@ -251,8 +251,7 @@ Input enum used to identify which action has been pressed
 
 # TODO
 
-- MousePlayer ?? mouse support
-- More devices?
+- Preserve index instead of "partymode" (maybe dictionaries)
 - Remove keyboardstates (&& mouse) if platform != Computer (just a simple boolean)
 - More deadzone options http://www.third-helix.com/2013/04/12/doing-thumbstick-dead-zones-right.html
 

@@ -43,6 +43,15 @@ namespace A1r.Input
         RightStickRight
     }
 
+    public enum MouseInput
+    {
+        LeftButton,
+        MiddleButton,
+        RightButton,
+        Button1,
+        Button2
+    }
+
     public struct InputToKey
     {
         public Input Input;
@@ -69,6 +78,8 @@ namespace A1r.Input
         private List<Player> players;
         private KeyboardState currentKeyboardState;
         private KeyboardState previousKeyboardState;
+        private MouseState currentMouseState;
+        private MouseState previousMouseState;
         private GamePadDeadZone gamePadDeadZone = GamePadDeadZone.IndependentAxes;
         private Array inputValues;
         public float DeadzoneSticks = 0.25f;
@@ -88,6 +99,9 @@ namespace A1r.Input
             // Save the one and only (if available) keyboardstate 
             previousKeyboardState = currentKeyboardState;
             currentKeyboardState = Keyboard.GetState();
+            // Save the one and only (if available) mousestate 
+            previousMouseState = currentMouseState;
+            currentMouseState = Mouse.GetState();
 
             for (int i = players.Count - 1; i >= 0; i--)
             {
@@ -159,6 +173,11 @@ namespace A1r.Input
         public bool IsPressed(Keys key)
         {
             return currentKeyboardState.IsKeyDown(key);
+        }
+
+        public bool IsPressed(MouseInput input)
+        {
+            return IsPressed(currentMouseState, input);
         }
 
         public bool IsPressed(Input input)
@@ -244,9 +263,32 @@ namespace A1r.Input
             return false;
         }
 
+        private bool IsPressed(MouseState state, MouseInput input)
+        {
+            switch (input)
+            {
+                case MouseInput.LeftButton:
+                    return state.LeftButton == ButtonState.Pressed;
+                case MouseInput.MiddleButton:
+                    return state.MiddleButton == ButtonState.Pressed;
+                case MouseInput.RightButton:
+                    return state.RightButton == ButtonState.Pressed;
+                case MouseInput.Button1:
+                    return state.XButton1 == ButtonState.Pressed;
+                case MouseInput.Button2:
+                    return state.XButton2 == ButtonState.Pressed;
+            }
+            return false;
+        }
+
         public bool IsHeld(Keys key)
         {
             return currentKeyboardState.IsKeyDown(key) && previousKeyboardState.IsKeyDown(key);
+        }
+
+        public bool IsHeld(MouseInput input)
+        {
+            return IsPressed(currentMouseState, input) && IsPressed(previousMouseState, input);
         }
 
         public bool IsHeld(Input input)
@@ -279,6 +321,11 @@ namespace A1r.Input
             return currentKeyboardState.IsKeyDown(key) && !previousKeyboardState.IsKeyDown(key);
         }
 
+        public bool JustPressed(MouseInput input)
+        {
+            return IsPressed(currentMouseState, input) && !IsPressed(previousMouseState, input);
+        }
+
         public bool JustPressed(Input input)
         {
             for (int i = 0; i < players.Count; i++)
@@ -307,6 +354,11 @@ namespace A1r.Input
         public bool JustReleased(Keys key)
         {
             return !currentKeyboardState.IsKeyDown(key) && previousKeyboardState.IsKeyDown(key);
+        }
+
+        public bool JustReleased(MouseInput input)
+        {
+            return !IsPressed(currentMouseState, input) && IsPressed(previousMouseState, input);
         }
 
         public bool JustReleased(Input input)
@@ -453,6 +505,16 @@ namespace A1r.Input
             return player == null || player.GamePadIndex == -1
                 ? new GamePadCapabilities()
                 : GamePad.GetCapabilities(player.GamePadIndex);
+        }
+
+        public Vector2 GetMousePosition()
+        {
+            return currentMouseState.Position.ToVector2();
+        }
+
+        public int GetMouseScroll()
+        {
+            return currentMouseState.ScrollWheelValue;
         }
     }
 }

@@ -60,16 +60,10 @@ namespace A1r.Input
         private class Player
         {
             public int Index { get; set; }
-        }
-        private class KeyboardPlayer : Player
-        {
-            public InputToKey[] Map;
-        }
-        private class GamePadPlayer : Player
-        {
             public int GamePadIndex;
             public GamePadState CurrentState;
             public GamePadState PreviousState;
+            public InputToKey[] Map;
         }
 
         private List<Player> players;
@@ -97,8 +91,8 @@ namespace A1r.Input
 
             for (int i = players.Count - 1; i >= 0; i--)
             {
-                var player = players[i] as GamePadPlayer;
-                if (player != null)
+                var player = players[i];
+                if (player.GamePadIndex > -1)
                 {
                     var state = GamePad.GetState(player.GamePadIndex, gamePadDeadZone);
                     if (state.IsConnected)
@@ -118,8 +112,8 @@ namespace A1r.Input
                 var indices = Enumerable.Range(0, MaximumGamePadCount).ToList();
                 for (int i = 0, l = players.Count; i < l; i++)
                 {
-                    var player = players[i] as GamePadPlayer;
-                    if (player != null)
+                    var player = players[i];
+                    if (player.GamePadIndex > -1)
                         indices.RemoveAt(player.GamePadIndex);
                 }
 
@@ -128,7 +122,7 @@ namespace A1r.Input
                     var state = GamePad.GetState(j, gamePadDeadZone);
                     if (state.IsConnected)
                     {
-                        AddPlayer(new GamePadPlayer()
+                        AddPlayer(new Player()
                         {
                             GamePadIndex = j,
                             CurrentState = state
@@ -177,17 +171,18 @@ namespace A1r.Input
 
         public bool IsPressed(Input input, int index)
         {
-            if (index >= players.Count) return false;
-            var p = players[index];
-            if (p is KeyboardPlayer)
-            {
-                var player = (KeyboardPlayer)p;
-                var key = getKey(player.Map, input);
-                return currentKeyboardState.IsKeyDown(key);
-            }
+            Player player = index < players.Count ? players[index] : null;
+            if (player == null)
+                return false;
             else
             {
-                return IsPressed(((GamePadPlayer)p).CurrentState, input);
+                if (player.GamePadIndex > -1)
+                    return IsPressed(player.CurrentState, input);
+                else
+                {
+                    var key = getKey(player.Map, input);
+                    return currentKeyboardState.IsKeyDown(key);
+                }
             }
         }
 
@@ -264,18 +259,18 @@ namespace A1r.Input
 
         public bool IsHeld(Input input, int index)
         {
-            if (index >= players.Count) return false;
-            var p = players[index];
-            if (p is KeyboardPlayer)
-            {
-                var player = (KeyboardPlayer)p;
-                var key = getKey(player.Map, input);
-                return currentKeyboardState.IsKeyDown(key) && previousKeyboardState.IsKeyDown(key);
-            }
+            Player player = index < players.Count ? players[index] : null;
+            if (player == null)
+                return false;
             else
             {
-                var player = (GamePadPlayer)p;
-                return IsPressed(player.CurrentState, input) && IsPressed(player.PreviousState, input);
+                if (player.GamePadIndex > -1)
+                    return IsPressed(player.CurrentState, input) && IsPressed(player.PreviousState, input);
+                else
+                {
+                    var key = getKey(player.Map, input);
+                    return currentKeyboardState.IsKeyDown(key) && previousKeyboardState.IsKeyDown(key);
+                }
             }
         }
 
@@ -294,18 +289,18 @@ namespace A1r.Input
 
         public bool JustPressed(Input input, int index)
         {
-            if (index >= players.Count) return false;
-            var p = players[index];
-            if (p is KeyboardPlayer)
-            {
-                var player = (KeyboardPlayer)p;
-                var key = getKey(player.Map, input);
-                return currentKeyboardState.IsKeyDown(key) && !previousKeyboardState.IsKeyDown(key);
-            }
+            Player player = index < players.Count ? players[index] : null;
+            if (player == null)
+                return false;
             else
             {
-                var player = (GamePadPlayer)p;
-                return IsPressed(player.CurrentState, input) && !IsPressed(player.PreviousState, input);
+                if (player.GamePadIndex > -1)
+                    return IsPressed(player.CurrentState, input) && !IsPressed(player.PreviousState, input);
+                else
+                {
+                    var key = getKey(player.Map, input);
+                    return currentKeyboardState.IsKeyDown(key) && !previousKeyboardState.IsKeyDown(key);
+                }
             }
         }
 
@@ -324,18 +319,18 @@ namespace A1r.Input
 
         public bool JustReleased(Input input, int index)
         {
-            if (index >= players.Count) return false;
-            var p = players[index];
-            if (p is KeyboardPlayer)
-            {
-                var player = (KeyboardPlayer)p;
-                var key = getKey(player.Map, input);
-                return !currentKeyboardState.IsKeyDown(key) && previousKeyboardState.IsKeyDown(key);
-            }
+            Player player = index < players.Count ? players[index] : null;
+            if (player == null)
+                return false;
             else
             {
-                var player = (GamePadPlayer)p;
-                return !IsPressed(player.CurrentState, input) && IsPressed(player.PreviousState, input);
+                if (player.GamePadIndex > -1)
+                    return !IsPressed(player.CurrentState, input) && IsPressed(player.PreviousState, input);
+                else
+                {
+                    var key = getKey(player.Map, input);
+                    return !currentKeyboardState.IsKeyDown(key) && previousKeyboardState.IsKeyDown(key);
+                }
             }
         }
 
@@ -349,17 +344,20 @@ namespace A1r.Input
 
         public bool SomethingDown(int index)
         {
-            if (index >= players.Count) return false;
-            var p = players[index];
-            if (p is KeyboardPlayer)
-                return currentKeyboardState.GetPressedKeys().Length > 0;
+            Player player = index < players.Count ? players[index] : null;
+            if (player == null)
+                return false;
             else
             {
-                var player = (GamePadPlayer)p;
-                foreach (Input key in inputValues)
-                    if (IsPressed(player.CurrentState, key))
-                        return true;
-                return false;
+                if (player.GamePadIndex > -1)
+                {
+                    foreach (Input key in inputValues)
+                        if (IsPressed(player.CurrentState, key))
+                            return true;
+                    return false;
+                }
+                else
+                    return currentKeyboardState.GetPressedKeys().Length > 0;
             }
         }
 
@@ -376,11 +374,10 @@ namespace A1r.Input
 
         public float GetRaw(Input input, int index)
         {
-            if (index >= players.Count) return 0f;
-            var p = players[index] as GamePadPlayer;
-            if (p != null)
+            Player player = index < players.Count ? players[index] : null;
+            if (player != null && player.GamePadIndex > -1)
             {
-                var state = p.CurrentState;
+                var state = player.CurrentState;
                 switch (input)
                 {
                     case Input.LeftTrigger:
@@ -431,11 +428,12 @@ namespace A1r.Input
             }
         }
 
-        public void AddKeyBoardPlayer(InputToKey[] map)
+        public void AddKeyboardPlayer(InputToKey[] map)
         {
             if (map != null)
             {
-                var keyboardPlayer = new KeyboardPlayer();
+                var keyboardPlayer = new Player();
+                keyboardPlayer.GamePadIndex = -1;
                 keyboardPlayer.Map = map;
                 AddPlayer(keyboardPlayer);
             }
@@ -443,18 +441,18 @@ namespace A1r.Input
 
         public bool SetVibration(int index, float left, float right)
         {
-            GamePadPlayer player = null;
-            if (index < players.Count)
-                player = players[index] as GamePadPlayer;
-            return player == null ? false : GamePad.SetVibration(player.GamePadIndex, left, right);
+            Player player = index < players.Count ? players[index] : null;
+            return player == null || player.GamePadIndex == -1
+                ? false
+                : GamePad.SetVibration(player.GamePadIndex, left, right);
         }
 
         public GamePadCapabilities GetCapabilities(int index)
         {
-            GamePadPlayer player = null;
-            if (index < players.Count)
-                player = players[index] as GamePadPlayer;
-            return player == null ? new GamePadCapabilities() : GamePad.GetCapabilities(player.GamePadIndex);
+            Player player = index < players.Count ? players[index] : null;
+            return player == null || player.GamePadIndex == -1
+                ? new GamePadCapabilities()
+                : GamePad.GetCapabilities(player.GamePadIndex);
         }
     }
 }

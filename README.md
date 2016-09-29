@@ -66,26 +66,20 @@ An easy-to-use inputmanager for MonoGame
 			var pos = new Vector2(x, y);
 			// Check for an Input and handle it accordingly
             if (iM.IsPressed(Input.Home))
-			{
                 Exit();
-			}
+				
 			// Accelerate based on user input
             if (iM.IsPressed(Input.Right))
-            {
                 pos.X += acceleration;
-            }
+				
             if (iM.IsPressed(Input.Left))
-            {
                 pos.X -= acceleration;
-            }
+				
             if (iM.IsPressed(Input.Up))
-            {
                 pos.Y -= acceleration;
-            }
+				
             if (iM.IsPressed(Input.Down))
-            {
                 pos.Y += acceleration;
-            }
 		}
 	}
 
@@ -93,9 +87,10 @@ An easy-to-use inputmanager for MonoGame
 
 ## InputManager constructor
 
-Add a keyboard mapping to a "GamePad" to create compatibility for both keyboard and controller
+Add a keyboard mapping to emulate a keyboard as a controller if you are planning to only using the `Input` enum in your code.
 
-	iM = new InputManager(this, InputToKey[]
+	iM = new InputManager(this);
+	iM.AddKeyboardPlayer(InputToKey[]
 	{
 		new InputToKey(Input.Home, Keys.Space),
         new InputToKey(Input.Start, Keys.Enter),
@@ -109,9 +104,7 @@ Add a keyboard mapping to a "GamePad" to create compatibility for both keyboard 
 So code like this will still work
 
 	if (iM.IsPressed(Input.Right))
-	{
 		pos.X += acceleration;
-	}
 
 ## Local Multiplayer
 
@@ -147,21 +140,16 @@ To implement multiple keyboard/controller players you can do something like this
 		{
 			// Check if the number of available players has changed. You can handle it your way.
 			if (!iM.AllPlayersConnected())
-            {
                 // Please connect controller
-            }
 
             for (int i = 0; i < myPlayerArray.Length; i++)
             {
                 var player = myPlayerArray[i];
                 if (iM.IsPressed(player.Run, i))
-                {
 					// Let the player run
-                }
+					
                 if (iM.IsPressed(player.Jump, i))
-                {
 					// Let the player jump
-                }
             }
 		}
 	}

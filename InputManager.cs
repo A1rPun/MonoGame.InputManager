@@ -53,13 +53,14 @@ namespace A1r.Input
         Button1,
         Button2
     }
-    
+
     public class InputManager : GameComponent
     {
         private class Player
         {
             public int Index;
             public int GamePadIndex;
+            public bool Subscribed;
             public GamePadState CurrentState;
             public GamePadState PreviousState;
             public Dictionary<Input, Keys> KeyboardMap;
@@ -152,7 +153,12 @@ namespace A1r.Input
                     return players[i - 1].Index + 1;
             return count;
         }
-        
+
+        private Player getPlayer(int index)
+        {
+            return index >= 0 && index < players.Count ? players[index] : null;
+        }
+
         public bool IsPressed(Keys key)
         {
             return currentKeyboardState.IsKeyDown(key);
@@ -173,7 +179,7 @@ namespace A1r.Input
 
         public bool IsPressed(Input input, int index)
         {
-            Player player = index < players.Count ? players[index] : null;
+            var player = getPlayer(index);
             if (player != null)
             {
                 switch (player.GamePadIndex)
@@ -287,7 +293,7 @@ namespace A1r.Input
 
         public bool IsHeld(Input input, int index)
         {
-            Player player = index < players.Count ? players[index] : null;
+            var player = getPlayer(index);
             if (player != null)
             {
                 switch (player.GamePadIndex)
@@ -325,7 +331,7 @@ namespace A1r.Input
 
         public bool JustPressed(Input input, int index)
         {
-            Player player = index < players.Count ? players[index] : null;
+            var player = getPlayer(index);
             if (player != null)
             {
                 switch (player.GamePadIndex)
@@ -363,7 +369,7 @@ namespace A1r.Input
 
         public bool JustReleased(Input input, int index)
         {
-            Player player = index < players.Count ? players[index] : null;
+            var player = getPlayer(index);
             if (player != null)
             {
                 switch (player.GamePadIndex)
@@ -391,7 +397,7 @@ namespace A1r.Input
 
         public bool SomethingDown(int index)
         {
-            Player player = index < players.Count ? players[index] : null;
+            var player = getPlayer(index);
             if (player != null)
             {
                 switch (player.GamePadIndex)
@@ -426,7 +432,7 @@ namespace A1r.Input
 
         public float GetRaw(Input input, int index)
         {
-            Player player = index < players.Count ? players[index] : null;
+            var player = getPlayer(index);
             if (player != null && player.GamePadIndex > -1)
             {
                 var state = player.CurrentState;
@@ -459,7 +465,8 @@ namespace A1r.Input
 
         public bool AllPlayersConnected()
         {
-            return players.Count == PlayerCount;
+            var count = players.Count;
+            return count == 0 ? false : count == PlayerCount;
         }
 
         public int GetPlayerCount()
@@ -502,9 +509,45 @@ namespace A1r.Input
             }
         }
 
+        public void Subscribe(int index)
+        {
+            var player = getPlayer(index);
+            if (player != null)
+                player.Subscribed = true;
+        }
+
+        public void Unsubscribe(int index)
+        {
+            var player = getPlayer(index);
+            if (player != null)
+                player.Subscribed = false;
+        }
+
+        public bool IsSubscribed(int index)
+        {
+            var player = getPlayer(index);
+            return player == null ? false : player.Subscribed;
+        }
+
+        public void Flush()
+        {
+            var newPlayers = new List<Player>();
+            for (int i = 0, l = players.Count; i < l; i++)
+            {
+                var player = players[i];
+                if (player.Subscribed)
+                {
+                    player.Subscribed = false;
+                    newPlayers.Add(player);
+                }
+            }
+            players = newPlayers;
+            PlayerCount = players.Count;
+        }
+
         public bool SetGamepadVibration(int index, float left, float right)
         {
-            Player player = index < players.Count ? players[index] : null;
+            var player = getPlayer(index);
             return player == null || player.GamePadIndex == -1
                 ? false
                 : GamePad.SetVibration(player.GamePadIndex, left, right);
@@ -512,15 +555,15 @@ namespace A1r.Input
 
         public GamePadCapabilities GetCapabilities(int index)
         {
-            Player player = index < players.Count ? players[index] : null;
+            var player = getPlayer(index);
             return player == null || player.GamePadIndex == -1
                 ? new GamePadCapabilities()
                 : GamePad.GetCapabilities(player.GamePadIndex);
         }
 
-        public Vector2 GetMousePosition()
+        public Point GetMousePosition()
         {
-            return currentMouseState.Position.ToVector2();
+            return currentMouseState.Position;
         }
 
         public int GetMouseScroll()

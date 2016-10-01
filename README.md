@@ -13,9 +13,9 @@ An easy-to-use inputmanager for MonoGame
 		   +.-'_____'-.---------------------------.-'_____'-.+
 		  /   |     |  '.           _           .'  |  _  |   \
 		 / ___| /|\ |___ \       ,'" "',       / ___| (_) |___ \
-		/ |      |      | ;      | A1r |      ; | _         _ | ;
-		| | <---   ---> | |  __  '.___.'  __  | |(_)       (_)| |
-		| |___   |   ___| ; |__|         |__> ; |___   _   ___| ;
+		/ |      '      | ;      | A1r |      ; | _         _ | ;
+		| | <--     --> | |  __  '.___.'  __  | |(_)       (_)| |
+		| |___   .   ___| ; |__|         |__> ; |___   _   ___| ;
 		|\    | \|/ |    /  _              _   \    | (_) |    /|
 		| \   |_____|  .','" "',        ,'" "', '.  |_____|  .' |
 		|  '-.______.-' /       \      /       \  '-._____.-'   |
@@ -26,19 +26,97 @@ An easy-to-use inputmanager for MonoGame
 		 \          /                              \           /
 		  \________/                                \_________/ 
 
-# Goals
+
+- [Goals](#goals)
+- [Install](#install)
+- [Methods](#goals)
+- [Usage](#usage)
+- [More Info](#moreinfo)
+- [Local Multiplayer](#localmp)
+- [Handling player selection](#selectmp)
+- [Porting](#porting)
+- [Enums](#enums)
+
+
+## <a name="goals">Goals
 
 - Controller first inputmanager
 - Customization options
 - Easy to port
 - Seamless multiplayer
 
-## Install
+## <a name="install">Install
 1. Copy `InputManager.cs` into your MonoGame project
 2. ????
 3. PROFIT!
 
-## Usage
+## <a name="methods">Methods
+
+**Gamepad methods**  
+These methods are also used for mapped keyboards or a mapped mouse.
+
+    bool IsPressed(Input input)
+	bool IsPressed(Input input, int index)
+    bool IsHeld(Input input)
+    bool IsHeld(Input input, int index)
+    bool JustPressed(Input input)
+	bool JustPressed(Input input, int index)
+	bool JustReleased(Input input)
+	bool JustReleased(Input input, int index)
+	bool SomethingDown()
+	bool SomethingDown(int index)
+    float GetRaw(Input input)
+	float GetRaw(Input input, int index)
+    bool SetGamepadVibration(int index, float left, float right)
+    GamePadCapabilities GetCapabilities(int index)
+    void Subscribe(int index)
+    void Unsubscribe(int index)
+    bool IsSubscribed(int index)
+    void Flush()
+
+**Keyboard methods**
+
+	bool IsPressed(Keys key)
+    bool IsHeld(Keys key)
+    bool JustPressed(Keys key)
+    bool JustReleased(Keys key)
+    void AddKeyboardPlayer(Dictionary<Input, Keys> map)
+    
+
+**Mouse methods**
+
+    bool IsPressed(MouseInput input)
+    bool IsHeld(MouseInput input)
+    bool JustPressed(MouseInput input)
+    bool JustReleased(MouseInput input)
+    Point GetMousePosition()
+    int GetMouseScroll()
+    void AddMousePlayer(Dictionary<Input, MouseInput> map)
+    
+**Generic**
+	
+	bool AllPlayersConnected()
+    int GetPlayerCount()
+
+**MonoGameComponent**
+
+    public void Update()
+
+## <a name="props">Properties
+
+Deadzones
+
+![Axial deadzone](http://www.third-helix.com/images/2013/04/axial-deadzone.jpg)
+
+    float DeadzoneSticks = 0.25f;
+    float DeadzoneTriggers = 0.25f;
+
+Inputmanager will try to find connected controllers based on this variable.
+
+    int PlayerCount = 1;
+
+
+## <a name="usage">Usage
 
     using A1r.Input
     // MonoGame class
@@ -82,113 +160,122 @@ An easy-to-use inputmanager for MonoGame
         }
     }
 
-# More info
+## <a name="moreinfo">More info
 
-## InputManager constructor
-
-Add a keyboard mapping to emulate a keyboard as a controller if you are planning to only using the `Input` enum in your code.
-
-	iM = new InputManager(this);
-	iM.AddKeyboardPlayer(InputToKey[]
-	{
-		new InputToKey(Input.Home, Keys.Space),
-        new InputToKey(Input.Start, Keys.Enter),
-        new InputToKey(Input.Back, Keys.Back),
-        new InputToKey(Input.Up, Keys.Up),
-        new InputToKey(Input.Left, Keys.Left),
-        new InputToKey(Input.Right, Keys.Right),
-        new InputToKey(Input.Down, Keys.Down),
-    });
-
-So code like this will still work
-
-	if (iM.IsPressed(Input.Right))
-		pos.X += acceleration;
-
-## Local Multiplayer
+### <a name="localmp">Local Multiplayer
 
 To implement multiple keyboard/controller players you can do something like this:
 
-	public class Peace : Game
+    public class Peace : Game
     {
-		// Simple player with actions
+        // Simple player with actions
         struct myPlayer
-		{
+        {
             public Input Run;
             public Input Jump;
-		}
+        }
         myPlayer[] myPlayerArray;
 
-		// In multiplayer initialisation code
-		public Peace()
-		{
-			iM = new InputManager(this)
-			{
-				PlayerCount = 4
-			};
-			// Set up an simple player array with remappable input actions.
-			myPlayerArray = new myPlayer[]
-			{
-				new myPlayer() { Run = Input.FaceButtonLeft, Jump = Input.FaceButtonDown }
-				new myPlayer() { Run = Input.FaceButtonLeft, Jump = Input.FaceButtonDown }
-			};
-
-		}
-		// In Update code
-		protected override void Update(GameTime gameTime)
-		{
-			// Check if the number of available players has changed. You can handle it your way.
-			if (!iM.AllPlayersConnected())
+        // In multiplayer initialisation code
+        public Peace()
+        {
+        	iM = new InputManager(this)
+        	{
+        		PlayerCount = 2
+        	};
+        	// Set up an simple player array with remappable input actions.
+        	myPlayerArray = new myPlayer[]
+        	{
+        		new myPlayer() { Run = Input.FaceButtonLeft, Jump = Input.FaceButtonDown }
+        		new myPlayer() { Run = Input.FaceButtonLeft, Jump = Input.FaceButtonDown }
+        	};
+        
+        }
+        // In Update code
+        protected override void Update(GameTime gameTime)
+        {
+        	// Check if the number of available players has changed. You can handle it your way.
+        	if (!iM.AllPlayersConnected())
                 // Please connect controller
 
             for (int i = 0; i < myPlayerArray.Length; i++)
             {
                 var player = myPlayerArray[i];
                 if (iM.IsPressed(player.Run, i))
-					// Let the player run
-					
+                    // Let the player run
+        			
                 if (iM.IsPressed(player.Jump, i))
-					// Let the player jump
+                    // Let the player jump
             }
-		}
+        }
 	}
 
-## InputManager Properties
+### <a name="selectmp">Handling player selection
 
-Deadzones
+    public class Peace : Game
+    {
+        public Input JoinGame = Input.FaceButtonDown;
+        public Input LeaveGame = Input.FaceButtonRight;
+        public Input StartGame = Input.Start;
+        // In multiplayer initialisation code
+        public Peace()
+        {
+        	iM = new InputManager(this)
+        	{
+        		PlayerCount = 8
+        	};
+        }
+        // In Update code
+        protected override void Update(GameTime gameTime)
+        {
+            var count = iM.GetPlayerCount();
+            bool start;
+            for (int i = 0; i < count; i++)
+            {
+                if(iM.IsSubscribed())
+                {
+                    if (iM.IsPressed(LeaveGame, i))
+                        iM.Unsubscribe(i);
+                    else if (iM.IsPressed(StartGame, i))
+                        start = true;
+                }
+                else if (iM.IsPressed(JoinGame, i))
+                    iM.Subscribe(i);
+            }
 
-![Axial deadzone](http://www.third-helix.com/images/2013/04/axial-deadzone.jpg)
+            if (start)
+                iM.Flush();
+            // This function flushes the unsubscribed players and sets the player count to the subscribed players
+        }
+	}
 
-    float DeadzoneSticks = 0.25f;
-    float DeadzoneTriggers = 0.25f;
+## <a name="porting">Porting
+If you plan to write an controller first game you may end up supporting other platforms.
+To add keyboard or mouse support
 
-Inputmanager will try to find connected controllers based on this variable.
+    iM.AddKeyboardPlayer(new Dictionary<Input, Keys>
+    {
+        { Input.Up, Keys.Up },
+        { Input.Left, Keys.Left },
+        { Input.Right, Keys.Right },
+        { Input.Down, Keys.Down },
+        { Input.Back, Keys.Space }
+    });
+    iM.AddMousePlayer(new Dictionary<Input, MouseInput>
+    {
+        { Input.Up, MouseInput.Button2 },
+        { Input.Left, MouseInput.LeftButton },
+        { Input.Right, MouseInput.RightButton },
+        { Input.Down, MouseInput.Button1 },
+        { Input.Back, MouseInput.MiddleButton }
+    });
 
-    int PlayerCount = 1;
 
-## InputManager Methods
+## <a name="enums">Enums
 
-	public bool IsPressed(Keys key)
-	public bool IsPressed(Input input)
-	public bool IsPressed(Input input, int index)
-	public bool IsHeld(Keys key)
-	public bool IsHeld(Input input)
-	public bool IsHeld(Input input, int index)
-	public bool JustPressed(Keys key)
-	public bool JustPressed(Input input)
-	public bool JustPressed(Input input, int index)
-	public bool JustReleased(Keys key)
-	public bool JustReleased(Input input)
-	public bool JustReleased(Input input, int index)
-	public bool SomethingDown()
-	public bool SomethingDown(int index)
-	public float GetRaw(Input input)
-	public float GetRaw(Input input, int index)
-	public bool AllPlayersConnected()
-    public int GetPlayerCount()
+**For Gamepads**
 
-## Input Enum
-Input enum used to identify which action has been pressed
+Use the `Input` enum to identify which action has been pressed
 
     enum Input
     {
@@ -226,9 +313,24 @@ Input enum used to identify which action has been pressed
         RightStickRight
     }
 
-## InputToKey struct
+**For Keyboard**
 
-	public InputToKey(Input input, Keys key)
+Use the `Microsoft.Xna.Framework.Input.Keys` enum to identify which action has been pressed
+
+
+**For Mouse**
+
+Use the `MouseInput` enum to identify which action has been pressed
+
+    public enum MouseInput
+    {
+        None,
+        LeftButton,
+        MiddleButton,
+        RightButton,
+        Button1,
+        Button2
+    }
 
 ## Types of configurations
 
@@ -238,9 +340,8 @@ Input enum used to identify which action has been pressed
 
 # TODO
 
-- Preserve index instead of "partymode" (maybe dictionaries)
 - Remove keyboardstates (&& mouse) if platform != Computer (just a simple boolean)
-- More deadzone options http://www.third-helix.com/2013/04/12/doing-thumbstick-dead-zones-right.html
+- [More deadzone options](http://www.third-helix.com/2013/04/12/doing-thumbstick-dead-zones-right.html)
 
 # Licence
 

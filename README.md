@@ -40,48 +40,47 @@ An easy-to-use inputmanager for MonoGame
 
 ## Usage
 
-	using A1r.Input;
-
-	// MonoGame class
+    using A1r.Input
+    // MonoGame class
     public class Peace : Game
     {
-		private InputManager iM;
+        private InputManager iM;
 
         public Peace()
-		{
-			// Construct a new inputmanager to use it in the Update function.
+        {
+            // Construct a new inputmanager to use it in the Update function.
             iM = new InputManager(this);
-		}
-
-        protected override void Initialize()
-		{
-			// Register GameComponent or call `iM.Update(gameTime)` in the Game's Update function
-			this.Components.Add(iM);
         }
 
-		protected override void Update(GameTime gameTime)
+        protected override void Initialize()
         {
-			// Setting up the right values
-			var acceleration = 1.337f;
-			var pos = new Vector2(x, y);
-			// Check for an Input and handle it accordingly
+            // Register GameComponent or call `iM.Update(gameTime)` in the Game's Update function
+            this.Components.Add(iM);
+        }
+
+        protected override void Update(GameTime gameTime)
+        {
+            // Setting up the right values
+            var acceleration = 1.337f;
+            var pos = new Vector2(x, y);
+            // Check for an Input and handle it accordingly
             if (iM.IsPressed(Input.Home))
-                Exit();
+            Exit();
 				
-			// Accelerate based on user input
+            // Accelerate based on user input
             if (iM.IsPressed(Input.Right))
-                pos.X += acceleration;
+            pos.X += acceleration;
 				
             if (iM.IsPressed(Input.Left))
-                pos.X -= acceleration;
+            pos.X -= acceleration;
 				
             if (iM.IsPressed(Input.Up))
-                pos.Y -= acceleration;
+            pos.Y -= acceleration;
 				
             if (iM.IsPressed(Input.Down))
-                pos.Y += acceleration;
-		}
-	}
+            pos.Y += acceleration;
+        }
+    }
 
 # More info
 

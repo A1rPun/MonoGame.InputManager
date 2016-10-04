@@ -122,7 +122,7 @@ Inputmanager will try to find connected controllers based on this variable.
     // MonoGame class
     public class Peace : Game
     {
-        private InputManager iM;
+        InputManager iM;
 
         public Peace()
         {
@@ -214,10 +214,10 @@ To implement multiple keyboard/controller players you can do something like this
 
     public class Peace : Game
     {
-        private Input JoinGame = Input.FaceButtonDown;
-        private Input LeaveGame = Input.FaceButtonRight;
-        private Input StartGame = Input.Start;
-        private List<int> activePlayerIds;
+        Input JoinGame = Input.FaceButtonDown;
+        Input LeaveGame = Input.FaceButtonRight;
+        Input StartGame = Input.Start;
+        List<int> activePlayerIds;
         // In multiplayer initialisation code
         public Peace()
         {

@@ -126,12 +126,10 @@ namespace A1r.Input
         {
             return currentKeyboardState.IsKeyDown(key);
         }
-
         public bool IsPressed(MouseInput input)
         {
             return IsPressed(currentMouseState, input);
         }
-
         public bool IsPressed(Buttons button, int index)
         {
             var player = getPlayer(index);
@@ -139,7 +137,6 @@ namespace A1r.Input
                 return player.CurrentState.IsButtonDown(button);
             return false;
         }
-
         public bool IsPressed(Input input)
         {
             for (int i = 0; i < players.Count; i++)
@@ -147,7 +144,6 @@ namespace A1r.Input
                     return true;
             return false;
         }
-
         public bool IsPressed(Input input, int index)
         {
             var player = getPlayer(index);
@@ -167,7 +163,6 @@ namespace A1r.Input
             }
             return false;
         }
-
         private bool IsPressed(GamePadState state, Input input)
         {
             switch (input)
@@ -225,7 +220,6 @@ namespace A1r.Input
             }
             return false;
         }
-
         private bool IsPressed(MouseState state, MouseInput input)
         {
             switch (input)
@@ -248,12 +242,10 @@ namespace A1r.Input
         {
             return currentKeyboardState.IsKeyDown(key) && previousKeyboardState.IsKeyDown(key);
         }
-
         public bool IsHeld(MouseInput input)
         {
             return IsPressed(currentMouseState, input) && IsPressed(previousMouseState, input);
         }
-
         public bool IsHeld(Buttons button, int index)
         {
             var player = getPlayer(index);
@@ -261,7 +253,6 @@ namespace A1r.Input
                 return player.CurrentState.IsButtonDown(button) && player.PreviousState.IsButtonDown(button);
             return false;
         }
-
         public bool IsHeld(Input input)
         {
             for (int i = 0; i < players.Count; i++)
@@ -269,7 +260,6 @@ namespace A1r.Input
                     return true;
             return false;
         }
-
         public bool IsHeld(Input input, int index)
         {
             var player = getPlayer(index);
@@ -294,12 +284,10 @@ namespace A1r.Input
         {
             return currentKeyboardState.IsKeyDown(key) && !previousKeyboardState.IsKeyDown(key);
         }
-
         public bool JustPressed(MouseInput input)
         {
             return IsPressed(currentMouseState, input) && !IsPressed(previousMouseState, input);
         }
-
         public bool JustPressed(Buttons button, int index)
         {
             var player = getPlayer(index);
@@ -307,7 +295,6 @@ namespace A1r.Input
                 return player.CurrentState.IsButtonDown(button) && !player.PreviousState.IsButtonDown(button);
             return false;
         }
-
         public bool JustPressed(Input input)
         {
             for (int i = 0; i < players.Count; i++)
@@ -315,7 +302,6 @@ namespace A1r.Input
                     return true;
             return false;
         }
-
         public bool JustPressed(Input input, int index)
         {
             var player = getPlayer(index);
@@ -340,12 +326,10 @@ namespace A1r.Input
         {
             return !currentKeyboardState.IsKeyDown(key) && previousKeyboardState.IsKeyDown(key);
         }
-
         public bool JustReleased(MouseInput input)
         {
             return !IsPressed(currentMouseState, input) && IsPressed(previousMouseState, input);
         }
-
         public bool JustReleased(Buttons button, int index)
         {
             var player = getPlayer(index);
@@ -353,7 +337,6 @@ namespace A1r.Input
                 return !player.CurrentState.IsButtonDown(button) && player.PreviousState.IsButtonDown(button);
             return false;
         }
-
         public bool JustReleased(Input input)
         {
             for (int i = 0; i < players.Count; i++)
@@ -361,7 +344,6 @@ namespace A1r.Input
                     return true;
             return false;
         }
-
         public bool JustReleased(Input input, int index)
         {
             var player = getPlayer(index);
@@ -389,7 +371,6 @@ namespace A1r.Input
                     return true;
             return false;
         }
-
         public bool SomethingDown(int index)
         {
             var player = getPlayer(index);
@@ -424,7 +405,6 @@ namespace A1r.Input
             }
             return 0f;
         }
-
         public float GetRaw(Input input, int index)
         {
             var player = getPlayer(index);
@@ -457,6 +437,7 @@ namespace A1r.Input
             }
             return 0f;
         }
+
         /* General Methods */
         public bool AllPlayersConnected()
         {
@@ -569,7 +550,6 @@ namespace A1r.Input
         {
             return currentMouseState.Position;
         }
-
         public int GetMouseScroll()
         {
             return currentMouseState.ScrollWheelValue - previousMouseState.ScrollWheelValue;

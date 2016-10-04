@@ -143,20 +143,20 @@ Inputmanager will try to find connected controllers based on this variable.
             var pos = new Vector2(x, y);
             // Check for an Input and handle it accordingly
             if (iM.IsPressed(Input.Home))
-            Exit();
+                Exit();
 				
             // Accelerate based on user input
             if (iM.IsPressed(Input.Right))
-            pos.X += acceleration;
+                pos.X += acceleration;
 				
             if (iM.IsPressed(Input.Left))
-            pos.X -= acceleration;
+                pos.X -= acceleration;
 				
             if (iM.IsPressed(Input.Up))
-            pos.Y -= acceleration;
+                pos.Y -= acceleration;
 				
             if (iM.IsPressed(Input.Down))
-            pos.Y += acceleration;
+                pos.Y += acceleration;
         }
     }
 
@@ -280,7 +280,7 @@ To add keyboard or mouse support
 
 **For Gamepads**
 
-Use the `Input` enum to identify which action has been pressed
+Use the `Microsoft.Xna.Framework.Input.Buttons` or the more generic `Input` enum to identify which action has been pressed
 
     enum Input
     {

@@ -52,7 +52,7 @@ An easy-to-use inputmanager for MonoGame
 
 ## <a name="methods">Methods
 
-**Gamepad methods**  
+**General methods**  
 These methods are also used for mapped keyboards or a mapped mouse.
 
     bool IsPressed(Input input)
@@ -69,10 +69,19 @@ These methods are also used for mapped keyboards or a mapped mouse.
 	float GetRaw(Input input, int index)
     bool SetGamepadVibration(int index, float left, float right)
     GamePadCapabilities GetCapabilities(int index)
-    void Subscribe(int index)
-    void Unsubscribe(int index)
-    bool IsSubscribed(int index)
-    void Flush()
+    void AddKeyboardPlayer(Dictionary<Input, Keys> map)
+    void AddMousePlayer(Dictionary<Input, MouseInput> map)    
+    bool AllPlayersConnected()
+    int GetPlayerCount()
+    void SetUsablePlayers(int[] playerIds)
+    
+**Gamepad methods**
+
+    bool IsPressed(Buttons button)
+    bool IsHeld(Buttons button)
+    bool JustPressed(Buttons button)
+    bool JustReleased(Buttons button)
+
 
 **Keyboard methods**
 
@@ -80,9 +89,7 @@ These methods are also used for mapped keyboards or a mapped mouse.
     bool IsHeld(Keys key)
     bool JustPressed(Keys key)
     bool JustReleased(Keys key)
-    void AddKeyboardPlayer(Dictionary<Input, Keys> map)
     
-
 **Mouse methods**
 
     bool IsPressed(MouseInput input)
@@ -91,13 +98,7 @@ These methods are also used for mapped keyboards or a mapped mouse.
     bool JustReleased(MouseInput input)
     Point GetMousePosition()
     int GetMouseScroll()
-    void AddMousePlayer(Dictionary<Input, MouseInput> map)
-    
-**Generic**
-	
-	bool AllPlayersConnected()
-    int GetPlayerCount()
-
+ 
 **MonoGameComponent**
 
     public void Update()
@@ -118,7 +119,6 @@ Inputmanager will try to find connected controllers based on this variable.
 
 ## <a name="usage">Usage
 
-    using A1r.Input
     // MonoGame class
     public class Peace : Game
     {
@@ -214,38 +214,43 @@ To implement multiple keyboard/controller players you can do something like this
 
     public class Peace : Game
     {
-        public Input JoinGame = Input.FaceButtonDown;
-        public Input LeaveGame = Input.FaceButtonRight;
-        public Input StartGame = Input.Start;
+        private Input JoinGame = Input.FaceButtonDown;
+        private Input LeaveGame = Input.FaceButtonRight;
+        private Input StartGame = Input.Start;
+        private List<int> activePlayerIds;
         // In multiplayer initialisation code
         public Peace()
         {
         	iM = new InputManager(this)
         	{
-        		PlayerCount = 8
+        		PlayerCount = 8 // Max joinable players
         	};
+            activePlayerIds = new List<int>();
         }
         // In Update code
         protected override void Update(GameTime gameTime)
         {
             var count = iM.GetPlayerCount();
-            bool start;
+            bool start = false;
             for (int i = 0; i < count; i++)
             {
-                if(iM.IsSubscribed())
+                if (activePlayerIds.Contains(i))
                 {
                     if (iM.IsPressed(LeaveGame, i))
-                        iM.Unsubscribe(i);
+                        activePlayerIds.RemoveAll(id => id == i);
                     else if (iM.IsPressed(StartGame, i))
                         start = true;
                 }
                 else if (iM.IsPressed(JoinGame, i))
-                    iM.Subscribe(i);
-            }
+                    activePlayerIds.Add(i);
 
+            }
             if (start)
-                iM.Flush();
-            // This function flushes the unsubscribed players and sets the player count to the subscribed players
+            {
+                iM.SetActivePlayers(activePlayerIds);
+                var playerCount = iM.GetPlayerCount();
+                // Do something with player count
+            }
         }
 	}
 

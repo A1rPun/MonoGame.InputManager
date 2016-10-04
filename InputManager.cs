@@ -2,7 +2,6 @@
 using System.Collections.Generic;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Input;
-using System.Linq;
 
 namespace A1r.Input
 {
@@ -58,35 +57,41 @@ namespace A1r.Input
     {
         private class Player
         {
-            public int Index;
             public int GamePadIndex;
-            public bool Subscribed;
             public GamePadState CurrentState;
             public GamePadState PreviousState;
             public Dictionary<Input, Keys> KeyboardMap;
             public Dictionary<Input, MouseInput> MouseMap;
+            public bool IsConnected()
+            {
+                return GamePadIndex < 0 ? true : CurrentState.IsConnected;
+            }
         }
         private List<Player> players;
-        private KeyboardState currentKeyboardState;
-        private KeyboardState previousKeyboardState;
-        private MouseState currentMouseState;
-        private MouseState previousMouseState;
         private GamePadDeadZone gamePadDeadZone = GamePadDeadZone.IndependentAxes;
         private Array inputValues;
         private Array mouseValues;
-        private int MaximumGamePadCount = 8;
+        private List<int> gamepadIndices = new List<int> { 0, 1, 2, 3, 4, 5, 6, 7 };
         private const int KEYBOARD_INDEX = -1;
         private const int MOUSE_INDEX = -2;
+        public KeyboardState currentKeyboardState;
+        public KeyboardState previousKeyboardState;
+        public MouseState currentMouseState;
+        public MouseState previousMouseState;
         public float DeadzoneSticks = 0.25f;
         public float DeadzoneTriggers = 0.25f;
         public int PlayerCount = 1;
-        public bool PartyMode;
 
         public InputManager(Game game) : base(game)
         {
             inputValues = Enum.GetValues(typeof(Input));
             mouseValues = Enum.GetValues(typeof(MouseInput));
             players = new List<Player>();
+            currentKeyboardState = Keyboard.GetState();
+            previousKeyboardState = currentKeyboardState;
+            currentMouseState = Mouse.GetState();
+            previousMouseState = currentMouseState;
+            FindNewGamepads();
         }
 
         public override void Update(GameTime gameTime)
@@ -103,55 +108,13 @@ namespace A1r.Input
                 var player = players[i];
                 if (player.GamePadIndex >= 0)
                 {
-                    var state = GamePad.GetState(player.GamePadIndex, gamePadDeadZone);
-                    if (state.IsConnected)
-                    {
-                        // Update gamepad state
-                        player.PreviousState = player.CurrentState;
-                        player.CurrentState = state;
-                        players[i] = player;
-                    }
-                    else // Remove disconnected players
-                        players.RemoveAt(i);
-                }
-            }
-            // Checking for new gamepads
-            if (players.Count < PlayerCount)
-            {
-                var indices = Enumerable.Range(0, MaximumGamePadCount).ToList();
-                for (int i = 0, l = players.Count; i < l; i++)
-                {
-                    var player = players[i];
-                    if (player.GamePadIndex > -1)
-                        indices.RemoveAt(player.GamePadIndex);
-                }
-
-                foreach (var j in indices)
-                {
-                    var state = GamePad.GetState(j, gamePadDeadZone);
-                    if (state.IsConnected)
-                    {
-                        AddPlayer(new Player()
-                        {
-                            GamePadIndex = j,
-                            CurrentState = state
-                        });
-
-                        if (players.Count == PlayerCount)
-                            break;
-                    }
+                    // Update gamepad state
+                    player.PreviousState = player.CurrentState;
+                    player.CurrentState = GamePad.GetState(player.GamePadIndex, gamePadDeadZone);
+                    players[i] = player;//TODO: needed?
                 }
             }
             base.Update(gameTime);
-        }
-
-        private int getNewIndex()
-        {
-            var count = players.Count;
-            for (int i = 1; i < count; i++)
-                if (players[i].Index > i)
-                    return players[i - 1].Index + 1;
-            return count;
         }
 
         private Player getPlayer(int index)
@@ -167,6 +130,14 @@ namespace A1r.Input
         public bool IsPressed(MouseInput input)
         {
             return IsPressed(currentMouseState, input);
+        }
+
+        public bool IsPressed(Buttons button, int index)
+        {
+            var player = getPlayer(index);
+            if (player != null && player.GamePadIndex >= 0)
+                return player.CurrentState.IsButtonDown(button);
+            return false;
         }
 
         public bool IsPressed(Input input)
@@ -283,6 +254,14 @@ namespace A1r.Input
             return IsPressed(currentMouseState, input) && IsPressed(previousMouseState, input);
         }
 
+        public bool IsHeld(Buttons button, int index)
+        {
+            var player = getPlayer(index);
+            if (player != null && player.GamePadIndex >= 0)
+                return player.CurrentState.IsButtonDown(button) && player.PreviousState.IsButtonDown(button);
+            return false;
+        }
+
         public bool IsHeld(Input input)
         {
             for (int i = 0; i < players.Count; i++)
@@ -321,6 +300,14 @@ namespace A1r.Input
             return IsPressed(currentMouseState, input) && !IsPressed(previousMouseState, input);
         }
 
+        public bool JustPressed(Buttons button, int index)
+        {
+            var player = getPlayer(index);
+            if (player != null && player.GamePadIndex >= 0)
+                return player.CurrentState.IsButtonDown(button) && !player.PreviousState.IsButtonDown(button);
+            return false;
+        }
+
         public bool JustPressed(Input input)
         {
             for (int i = 0; i < players.Count; i++)
@@ -357,6 +344,14 @@ namespace A1r.Input
         public bool JustReleased(MouseInput input)
         {
             return !IsPressed(currentMouseState, input) && IsPressed(previousMouseState, input);
+        }
+
+        public bool JustReleased(Buttons button, int index)
+        {
+            var player = getPlayer(index);
+            if (player != null && player.GamePadIndex >= 0)
+                return !player.CurrentState.IsButtonDown(button) && player.PreviousState.IsButtonDown(button);
+            return false;
         }
 
         public bool JustReleased(Input input)
@@ -433,7 +428,7 @@ namespace A1r.Input
         public float GetRaw(Input input, int index)
         {
             var player = getPlayer(index);
-            if (player != null && player.GamePadIndex > -1)
+            if (player != null && player.GamePadIndex >= 0)
             {
                 var state = player.CurrentState;
                 switch (input)
@@ -462,105 +457,114 @@ namespace A1r.Input
             }
             return 0f;
         }
-
+        /* General Methods */
         public bool AllPlayersConnected()
         {
-            var count = players.Count;
-            return count == 0 ? false : count == PlayerCount;
+            var l = players.Count;
+            for (int i = 0; i < l; i++)
+            {
+                var player = players[i];
+                if (player == null || !player.IsConnected())
+                    return false;
+            }
+            return l != 0;
         }
-
         public int GetPlayerCount()
         {
             return players.Count;
         }
-
-        private void AddPlayer(Player player)
+        public bool FindNewGamepads()
         {
-            // PartyMode will just add an available controller to the list while NormalMode (bool=false) keeps the player indexes in place
-            if (PartyMode)
-                players.Add(player);
-            else
+            var found = false;
+            var indices = new List<int>();
+            indices.AddRange(gamepadIndices);
+            for (int i = 0, l = players.Count; i < l; i++)
             {
-                var index = getNewIndex();
-                player.Index = index;
-                players.Insert(index, player);
+                var player = players[i];
+                if (player.GamePadIndex >= 0)
+                    indices.RemoveAt(player.GamePadIndex);
             }
-        }
 
+            foreach (var j in indices)
+            {
+                var state = GamePad.GetState(j, gamePadDeadZone);
+                if (state.IsConnected)
+                {
+                    found = true;
+                    AddGamepadPlayer(new Player()
+                    {
+                        GamePadIndex = j,
+                        CurrentState = state
+                    });
+
+                    if (players.Count == PlayerCount)
+                        break;
+                }
+            }
+            return found;
+        }
+        public void SetActivePlayers(List<int> playerIds)
+        {
+            var newPlayers = new List<Player>();
+            for (int i = 0, l = playerIds.Count; i < l; i++)
+            {
+                var newPlayer = getPlayer(playerIds[i]);
+                if (newPlayer != null)
+                    newPlayers.Add(newPlayer);
+            }
+            players = newPlayers;
+            PlayerCount = players.Count;
+        }
+        /* Gamepad Methods */
+        private void AddGamepadPlayer(Player player)
+        {
+            for (int i = 0, l = players.Count; i < l; i++)
+            {
+                var p = players[i];
+                if (!p.IsConnected())
+                {
+                    players[i] = player;
+                    return;
+                }
+            }
+            players.Add(player);
+        }
+        public bool SetGamepadVibration(int index, float left, float right)
+        {
+            var player = getPlayer(index);
+            return player == null || player.GamePadIndex < 0
+                ? false
+                : GamePad.SetVibration(player.GamePadIndex, left, right);
+        }
+        public GamePadCapabilities GetCapabilities(int index)
+        {
+            var player = getPlayer(index);
+            return player == null || player.GamePadIndex < 0
+                ? new GamePadCapabilities()
+                : GamePad.GetCapabilities(player.GamePadIndex);
+        }
+        /* Keyboard Methods */
         public void AddKeyboardPlayer(Dictionary<Input, Keys> map)
         {
             if (map != null)
             {
                 var keyboardPlayer = new Player();
-                keyboardPlayer.GamePadIndex = -1;
+                keyboardPlayer.GamePadIndex = KEYBOARD_INDEX;
                 keyboardPlayer.KeyboardMap = map;
-                AddPlayer(keyboardPlayer);
+                players.Add(keyboardPlayer);
             }
         }
-
+        /* Mouse Methods */
         public void AddMousePlayer(Dictionary<Input, MouseInput> map)
         {
             if (map != null)
             {
                 var mousePlayer = new Player();
-                mousePlayer.GamePadIndex = -2;
+                mousePlayer.GamePadIndex = MOUSE_INDEX;
                 mousePlayer.MouseMap = map;
-                AddPlayer(mousePlayer);
+                players.Add(mousePlayer);
             }
         }
-
-        public void Subscribe(int index)
-        {
-            var player = getPlayer(index);
-            if (player != null)
-                player.Subscribed = true;
-        }
-
-        public void Unsubscribe(int index)
-        {
-            var player = getPlayer(index);
-            if (player != null)
-                player.Subscribed = false;
-        }
-
-        public bool IsSubscribed(int index)
-        {
-            var player = getPlayer(index);
-            return player == null ? false : player.Subscribed;
-        }
-
-        public void Flush()
-        {
-            var newPlayers = new List<Player>();
-            for (int i = 0, l = players.Count; i < l; i++)
-            {
-                var player = players[i];
-                if (player.Subscribed)
-                {
-                    player.Subscribed = false;
-                    newPlayers.Add(player);
-                }
-            }
-            players = newPlayers;
-            PlayerCount = players.Count;
-        }
-
-        public bool SetGamepadVibration(int index, float left, float right)
-        {
-            var player = getPlayer(index);
-            return player == null || player.GamePadIndex == -1
-                ? false
-                : GamePad.SetVibration(player.GamePadIndex, left, right);
-        }
-
-        public GamePadCapabilities GetCapabilities(int index)
-        {
-            var player = getPlayer(index);
-            return player == null || player.GamePadIndex == -1
-                ? new GamePadCapabilities()
-                : GamePad.GetCapabilities(player.GamePadIndex);
-        }
-
         public Point GetMousePosition()
         {
             return currentMouseState.Position;
@@ -568,7 +572,7 @@ namespace A1r.Input
 
         public int GetMouseScroll()
         {
-            return currentMouseState.ScrollWheelValue;
+            return currentMouseState.ScrollWheelValue - previousMouseState.ScrollWheelValue;
         }
     }
 }

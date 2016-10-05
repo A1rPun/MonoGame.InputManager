@@ -105,7 +105,15 @@ These methods are also used for mapped keyboards or a mapped mouse.
 
 ## <a name="props">Properties
 
-Deadzones
+**States**  
+These properties can be used for getting the raw values from the MonoGame states
+
+    KeyboardState currentKeyboardState;
+    KeyboardState previousKeyboardState;
+    MouseState currentMouseState;
+    MouseState previousMouseState;
+
+**Deadzones**
 
 ![Axial deadzone](http://www.third-helix.com/images/2013/04/axial-deadzone.jpg)
 
